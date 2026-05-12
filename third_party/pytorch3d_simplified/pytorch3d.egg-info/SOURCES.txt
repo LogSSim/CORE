@@ -1,0 +1,15 @@
+setup.py
+/data1/FlowPolicy/3D-Diffusion-Policy/third_party/pytorch3d_simplified/pytorch3d/csrc/ext.cpp
+/data1/FlowPolicy/3D-Diffusion-Policy/third_party/pytorch3d_simplified/pytorch3d/csrc/sample_farthest_points/sample_farthest_points.cu
+/data1/FlowPolicy/3D-Diffusion-Policy/third_party/pytorch3d_simplified/pytorch3d/csrc/sample_farthest_points/sample_farthest_points_cpu.cpp
+/data1/sjy/MP1/third_party/pytorch3d_simplified/pytorch3d/csrc/ext.cpp
+/data1/sjy/MP1/third_party/pytorch3d_simplified/pytorch3d/csrc/sample_farthest_points/sample_farthest_points.cu
+/data1/sjy/MP1/third_party/pytorch3d_simplified/pytorch3d/csrc/sample_farthest_points/sample_farthest_points_cpu.cpp
+pytorch3d/__init__.py
+pytorch3d.egg-info/PKG-INFO
+pytorch3d.egg-info/SOURCES.txt
+pytorch3d.egg-info/dependency_links.txt
+pytorch3d.egg-info/requires.txt
+pytorch3d.egg-info/top_level.txt
+pytorch3d/ops/__init__.py
+pytorch3d/ops/sample_farthest_points.py
