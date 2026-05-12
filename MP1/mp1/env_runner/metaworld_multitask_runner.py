@@ -60,6 +60,10 @@ class MultiMetaworldRunner(BaseRunner):
         }
         self.logger_util_test = logger_util.LargestKRecorder(K=3)
         self.logger_util_test10 = logger_util.LargestKRecorder(K=5)
+        self.task_logger_util_test10 = {
+            task_name: logger_util.LargestKRecorder(K=5)
+            for task_name in self.task_names
+        }
 
     def _make_env(self, task_name: str):
         return MultiStepWrapper(
@@ -173,15 +177,31 @@ class MultiMetaworldRunner(BaseRunner):
 
         for task_name, task_log in per_task_logs.items():
             key_prefix = f"task_{task_name}"
+            self.task_logger_util_test10[task_name].record(task_log["test_mean_score"])
+            task_top5_avg = self.task_logger_util_test10[task_name].average_of_largest_K()
             log_data[f"{key_prefix}_test_mean_score"] = task_log["test_mean_score"]
             log_data[f"{key_prefix}_mean_success_rates"] = task_log["mean_success_rates"]
             log_data[f"{key_prefix}_mean_traj_rewards"] = task_log["mean_traj_rewards"]
             log_data[f"{key_prefix}_mean_time"] = task_log["mean_time"]
+            log_data[f"{key_prefix}_SR_test_L5"] = task_top5_avg
 
         self.logger_util_test.record(log_data["test_mean_score"])
         self.logger_util_test10.record(log_data["test_mean_score"])
         log_data["SR_test_L3"] = self.logger_util_test.average_of_largest_K()
         log_data["SR_test_L5"] = self.logger_util_test10.average_of_largest_K()
+        log_data["multi_task_taskwise_SR_test_L5"] = float(
+            np.mean(
+                [
+                    self.task_logger_util_test10[task_name].average_of_largest_K()
+                    for task_name in self.task_names
+                ]
+            )
+        )
 
         cprint(f"multi_task_test_mean_score: {log_data['test_mean_score'] * 100:.2f}", "green")
+        cprint(
+            "multi_task_taskwise_SR_test_L5: "
+            f"{log_data['multi_task_taskwise_SR_test_L5'] * 100:.2f}",
+            "green",
+        )
         return log_data

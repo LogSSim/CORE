@@ -53,7 +53,7 @@ policy:
 
   # Optional short-term memory in the point-cloud encoder.
   short_term_memory:
-    enabled: false
+    enabled: true
     num_memory_frames: 1
     residual_hidden_dim: 128
     gate_hidden_dim: 128

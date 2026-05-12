@@ -1,0 +1,72 @@
+name: metaworld_multitask_part4
+
+task_name: ${name}
+
+tasks:
+  - door-open
+  - door-lock
+  - drawer-close
+  - door-unlock
+  - faucet-close
+  - faucet-open
+  - handle-press
+  - handle-pull
+  - button-press
+  - button-press-wall
+  - door-close
+
+shape_meta: &shape_meta
+  obs:
+    point_cloud:
+      shape: [512, 3]
+      type: point_cloud
+    agent_pos:
+      shape: [9]
+      type: low_dim
+  action:
+    shape: [4]
+
+env_runner:
+  _target_: mp1.env_runner.metaworld_multitask_runner.MultiMetaworldRunner
+  eval_episodes: 20
+  n_obs_steps: ${n_obs_steps}
+  n_action_steps: ${n_action_steps}
+  fps: 10
+  n_envs: null
+  n_train: null
+  n_test: null
+  task_names: ${task.tasks}
+  device: ${training.device}
+  use_point_crop: ${policy.use_point_crop}
+
+dataset:
+  _target_: mp1.dataset.metaworld_multitask_dataset.MultiMetaworldDataset
+  tasks:
+    - name: door-open
+      zarr_path: data/metaworld_door-open_expert.zarr
+    - name: door-lock
+      zarr_path: data/metaworld_door-lock_expert.zarr
+    - name: drawer-close
+      zarr_path: data/metaworld_drawer-close_expert.zarr
+    - name: door-unlock
+      zarr_path: data/metaworld_door-unlock_expert.zarr
+    - name: faucet-close
+      zarr_path: data/metaworld_faucet-close_expert.zarr
+    - name: faucet-open
+      zarr_path: data/metaworld_faucet-open_expert.zarr
+    - name: handle-press
+      zarr_path: data/metaworld_handle-press_expert.zarr
+    - name: handle-pull
+      zarr_path: data/metaworld_handle-pull_expert.zarr
+    - name: button-press
+      zarr_path: data/metaworld_button-press_expert.zarr
+    - name: button-press-wall
+      zarr_path: data/metaworld_button-press-wall_expert.zarr
+    - name: door-close
+      zarr_path: data/metaworld_door-close_expert.zarr
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: 90

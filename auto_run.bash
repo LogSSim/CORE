@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # -------------------------------------------------------------------------
-# run_train.sh  GPU_ID CONFIG  [TASKS]  [SEEDS]
+# run_train.sh  GPU_ID CONFIG  [TASKS]  [SEEDS]  [RUN_TAG]
 #
 # - GPU_ID  : necessary
 # - CONFIG  : necessary
 # - TASKS   : option
 # - SEEDS   : option 0,1,2
+# - RUN_TAG : option, used in output dir name, default 0000
 # -------------------------------------------------------------------------
 
 set -euo pipefail      #
@@ -13,15 +14,17 @@ set -euo pipefail      #
 show_usage() {
   cat <<EOF
 use:
-  $0 <GPU_ID> <CONFIG> [TASKS] [SEEDS]
+  $0 <GPU_ID> <CONFIG> [TASKS] [SEEDS] [RUN_TAG]
 
 example:
   $0 0 baseline metaworld_door-close 42
+  $0 0 mp1_cm_dis metaworld_multitask_7 0 part1
 
   # explain:
   #   - run a task on GPU 0 
   #   - config file is baseline
   #   - random seed is 42
+  #   - optional RUN_TAG avoids output directory collisions
 EOF
 }
 
@@ -36,6 +39,7 @@ GPU_ID=$1
 CONFIG=$2
 TASKS_ARG=${3:-}
 SEEDS_ARG=${4:-}
+RUN_TAG=${5:-${RUN_TAG:-0000}}
 
 # ----------- default tasks and seeds ---------------------------------------------
 TASKS_DEFAULT=(
@@ -50,53 +54,10 @@ TASKS_DEFAULT=(
 )
 
 TASKS_DEFAULT=(
-  
-  metaworld_shelf-place
-  metaworld_disassemble
-  metaworld_pick-place-wall 
-  metaworld_push
-  metaworld_pick-place
-
-
-  metaworld_hand-insert
-  metaworld_assembly
-  
-  # metaworld_sweep
-  # metaworld_soccer
-  
-
-  # metaworld_peg-insert-side
-  # metaworld_hammer
-  # metaworld_coffee-push
-  # metaworld_box-close
-
-  # metaworld_bin-picking
-  # metaworld_peg-unplug-side
-  # metaworld_window-open
-  # metaworld_window-close
-  
-  # metaworld_reach
-  # metaworld_handle-pull-side 
-  # metaworld_plate-slide 
-  # metaworld_plate-slide-back 
-  
-  # metaworld_plate-slide-back-side 
-  # metaworld_plate-slide-side
-  # metaworld_door-open
-  # metaworld_door-unlock
-  # metaworld_faucet-close
-
-  # metaworld_faucet-open
-  # metaworld_handle-press
-  # metaworld_handle-pull
-  # metaworld_button-press 
-  # metaworld_button-press-wall 
-  
-  # metaworld_door-close 
-  # adroit_hammer
-  # adroit_door
-  # adroit_pen
-
+  metaworld_multitask_part1
+  metaworld_multitask_part2
+  metaworld_multitask_part3
+  metaworld_multitask_part4
 )
 SEEDS_DEFAULT=(0 1 2)
 # SEEDS_DEFAULT=(1 2)
@@ -117,7 +78,7 @@ fi
 # ----------- train loop -----------------------------------------------------
 for seed in "${SEEDS[@]}"; do
   for task in "${TASKS[@]}"; do
-    echo "▶ GPU=$GPU_ID | config=$CONFIG | task=$task | seed=$seed"
-    bash scripts/train_policy.sh "$CONFIG" "$task" 0000 "$seed" "$GPU_ID"
+    echo "▶ GPU=$GPU_ID | config=$CONFIG | task=$task | seed=$seed | run_tag=$RUN_TAG"
+    bash scripts/train_policy.sh "$CONFIG" "$task" "$RUN_TAG" "$seed" "$GPU_ID"
   done
 done
