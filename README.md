@@ -149,7 +149,18 @@ bash -n auto_3stage.bash
 bash auto_3stage.bash --method CORE_mp --gpu 0 --seeds 0 --stages 1 --dry-run
 ```
 
-## 🕶️ Anonymous Review
+## Citation
 
-This repository is prepared for anonymous review. Author names, affiliations,
-and identifying project paths are intentionally omitted.
+If you find CORE useful, please cite:
+
+```bibtex
+@misc{sheng2026corecommonoutcomeregularities,
+  title={CORE: Common Outcome Regularities from Action-Free Visual Demonstrations for Robot Manipulation},
+  author={Juyi Sheng and Jincheng Li and Mingxin Tan and Mengyuan Liu},
+  year={2026},
+  eprint={2606.29517},
+  archivePrefix={arXiv},
+  primaryClass={cs.RO},
+  url={https://arxiv.org/abs/2606.29517},
+}
+```
