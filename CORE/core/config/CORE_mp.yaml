@@ -1,0 +1,186 @@
+defaults:
+  - task: metaworld_box-close
+
+name: CORE_mp
+
+task_name: ${task.name}
+shape_meta: ${task.shape_meta}
+exp_name: "CORE_mp"
+
+horizon: 4
+n_obs_steps: 2
+n_action_steps: 4
+n_latency_steps: 0
+dataset_obs_steps: ${n_obs_steps}
+keypoint_visible_rate: 1.0
+obs_as_global_cond: True
+
+terminal_goal:
+  stage: 1
+  stage1_num_train_episodes: 20
+  stage3_num_train_episodes: 10
+  terminal_window: 1
+  terminal_num_negatives: 4
+  num_clusters: 1
+  goal_selection: common
+  soft_nearest_temperature: 0.1
+  prototype_path: data/goal_bank_CORE_mp/${task_name}/k_${terminal_goal.num_clusters}/prototypes.npy
+  common_prototype_path: data/goal_bank_CORE_mp/${task_name}/k_${terminal_goal.num_clusters}/common_prototype.npy
+  terminal_encoder_ckpt: null
+  freeze_terminal_encoder: true
+  goal_index: null
+
+policy:
+  _target_: core.policy.core_mp_policy.COREMPPolicy
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 84
+  - 84
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  obs_as_global_cond: true
+  shape_meta: ${shape_meta}
+
+  use_pc_color: false
+  pointnet_type: "mlp"
+
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm
+    normal_channel: false
+
+  policy_stage: ${terminal_goal.stage}
+
+  terminal_aux:
+    enabled: ${eval:'${terminal_goal.stage} == 1'}
+    feat_dim: ${policy.encoder_output_dim}
+    projection_dim: ${policy.encoder_output_dim}
+    terminal_window: ${terminal_goal.terminal_window}
+    neg_count: ${terminal_goal.terminal_num_negatives}
+    temperature: 0.1
+    lambda_nce: 1.0
+    lambda_ttg: 0.3
+    lambda_term: 0.1
+
+  goal_conditioning:
+    enabled: ${eval:'${terminal_goal.stage} == 3'}
+    selection: ${terminal_goal.goal_selection}
+    projection_dim: ${policy.encoder_output_dim}
+    prototype_path: ${terminal_goal.prototype_path}
+    common_prototype_path: ${terminal_goal.common_prototype_path}
+    terminal_encoder_ckpt: ${terminal_goal.terminal_encoder_ckpt}
+    freeze_terminal_encoder: ${terminal_goal.freeze_terminal_encoder}
+    soft_nearest_temperature: ${terminal_goal.soft_nearest_temperature}
+    goal_index: ${terminal_goal.goal_index}
+
+ema:
+  _target_: core.model.mean.ema_model.EMAModel
+  update_after_step: 0
+  inv_gamma: 1.0
+  power: 0.75
+  min_value: 0.0
+  max_value: 0.9999
+
+dataloader:
+  batch_size: 128
+  num_workers: 8
+  shuffle: True
+  pin_memory: True
+  persistent_workers: False
+
+val_dataloader:
+  batch_size: 128
+  num_workers: 8
+  shuffle: False
+  pin_memory: True
+  persistent_workers: False
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 1.0e-4
+  betas: [0.95, 0.999]
+  eps: 1.0e-8
+  weight_decay: 1.0e-6
+
+training:
+  device: "cuda:0"
+  seed: 42
+  debug: False
+  resume: True
+  lr_scheduler: cosine
+  lr_warmup_steps: 500
+  num_epochs: 600
+  gradient_accumulate_every: 1
+  use_ema: True
+  rollout_every: 200
+  checkpoint_every: 200
+  val_every: 1
+  sample_every: 5
+  max_train_steps: null
+  max_val_steps: null
+  tqdm_interval_sec: 1.0
+  max_grad_norm: 1.0
+  ema_decay: 0.95
+  short: null
+
+logging:
+  group: ${exp_name}
+  id: null
+  mode: online
+  name: ${exp_name}_${training.seed}
+  project: mp
+  resume: true
+  tags:
+  - mp
+  - CORE_mp
+
+checkpoint:
+  save_ckpt: True
+  topk:
+    monitor_key: test_mean_score
+    mode: max
+    k: 1
+    format_str: 'epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt'
+  save_last_ckpt: True
+  save_last_snapshot: False
+
+multi_run:
+  run_dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
+  wandb_name_base: ${now:%Y.%m.%d-%H.%M.%S}_${name}_${task_name}
+
+hydra:
+  job:
+    override_dirname: ${name}
+  run:
+    dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
+  sweep:
+    dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
+    subdir: ${hydra.job.num}
+
+task:
+  dataset:
+    _target_: core.dataset.core_terminal_dataset.CORETerminalDataset
+    stage: ${terminal_goal.stage}
+    stage1_num_train_episodes: ${terminal_goal.stage1_num_train_episodes}
+    stage3_num_train_episodes: ${terminal_goal.stage3_num_train_episodes}
+    return_terminal_samples: ${eval:'${terminal_goal.stage} == 1'}
+    terminal_window: ${terminal_goal.terminal_window}
+    terminal_num_negatives: ${terminal_goal.terminal_num_negatives}
+    val_ratio: 0.0
+    max_train_episodes: null

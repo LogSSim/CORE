@@ -1,6 +1,13 @@
 # Dataset and generated experiment data
 /data/
 /MP1/data/
+/CORE/data/
+/CORE/save_videos/
+wandb/
+outputs/
+*.ckpt
+*.pt
+*.pth
 
 # Python cache files
 __pycache__/

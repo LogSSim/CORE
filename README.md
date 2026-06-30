@@ -1,66 +1,155 @@
-# MP1: Mean Flow Tames Policy Learning in 1-step for Robotic Manipulation
+# CORE
 
-<h4 align = "center">Juyi Sheng<sup>1 *</sup>, Ziyi Wang<sup>1 *</sup>, Peiming Li<sup>1</sup>, Mengyuan Liu<sup>1 </sup>
-<h4 align = "center"> <sup>1</sup>State Key Laboratory of General Artificial Intelligence,
-Peking University, Shenzhen Graduate School, Shenzhen, China</center></h4>
+## 📄 Paper
 
-## Abstract
+**CORE: Common Outcome Regularities from Action-Free Visual Demonstrations for Robot Manipulation**
 
-In robot manipulation, robot learning is becoming a prevailing approach. However, generative models within this field
-face a fundamental trade-off between the slow, iterative sampling of diffusion models and the architectural constraints of
-faster Flow-based methods, which often rely on explicit consistency losses. To address these limitations, we introduce
-MP1, which pairs 3D point-cloud inputs with the MeanFlow paradigm to generate action trajectories in one network function evaluation (1-NFE). By directly learning the intervalaveraged velocity via the “MeanFlow Identity,” our policy avoids any additional consistency constraints. This formulation eliminates numerical ODE-solver errors during inference, yielding more precise trajectories. MP1 further incorporates CFG for improved trajectory controllability while retaining 1-NFE inference without reintroducing structural constraints. Because subtle scene-context variations are critical for robot learning, especially in few-shot learning, we introduce a lightweight Dispersive Loss that repels state embeddings during training, boosting generalization without slowing inference. We validate our method on the Adroit and Meta-World benchmarks, as well as in real-world scenarios. Experimental results show MP1 achieves superior average task success rates, outperforming DP3 by 10.2% and FlowPolicy by 7.3%. Its average inference time is only 6.8 ms—19× faster than DP3 and nearly 2× faster than FlowPolicy. Our code is available at https://mp1-2254.github.io/.
+Paper: [arXiv:2606.29517](https://arxiv.org/abs/2606.29517)
 
-## Pipeline
+## 🧾 Abstract
 
-<div align="center">
-  <img src="framework.png" alt="MP1" width="100%">
-</div>
+Robot imitation learning often relies on costly robot demonstrations, while
+abundant action-free visual demonstrations, such as human videos, are difficult
+to use because they lack robot-executable actions and suffer from embodiment
+gaps. We propose CORE, a policy learning framework that extracts Common Outcome
+Regularities from visual demonstrations. Rather than transferring explicit
+actions across embodiments, CORE exploits a key observation: although successful
+trajectories for the same task can be diverse,
+their terminal states often share stable object configurations, spatial
+relations, and contact constraints. CORE first trains a terminal outcome encoder
+with contrastive and auxiliary temporal objectives, then aggregates successful
+terminal embeddings into visual goal prototypes, and finally injects these
+prototypes as global goal conditions into robot policies. Compared with
+language instructions, visual goal prototypes provide more concrete geometric
+and physical constraints for task completion. Across Meta-World, RoboTwin 2.0,
+and real-world manipulation, CORE improves the average success rate of the
+corresponding policy backbones by up to +3.9, +11.1, and +17.0 percentage
+points, respectively, and outperforms text-conditioned variants under the
+evaluated settings.
 
-The MP1 takes the historical observation point cloud and the robot's state as inputs. These inputs are processed through a visual encoder and a state encoder, respectively, and then serve as conditional inputs to the UNet-integrated MeanFlow. After passing through the MeanFlow, the model computes regression loss ($\mathcal{L}_{cfg}$) between the mean velocity generated from the initial noise and the target velocity. 
-This $\mathcal{L}_{cfg}$ is combined with a Dispersive Loss ($\mathcal{L}_{disp}$) imposed on the UNet’s hidden states to jointly optimize the network parameters.
+## 🧭 Scope
 
-# 💻 Installation
+This repository is a cleaned CORE training branch. It keeps only the
+three-stage CORE pipeline for:
 
-See [install.md](install.md) for installation instructions. 
+```bash
+PART="metaworld_box-close"
+```
 
-# 📚 Data
-You could generate demonstrations by yourself using our provided expert policies.  Generated demonstrations are under `$YOUR_REPO_PATH/MP1/data/`.
+Two variants are available:
 
-# 🛠️ Usage
-Scripts for generating demonstrations, training, and evaluation are all provided in the `scripts/` folder. 
+- `CORE_mp`: CORE with the MP policy backbone.
+- `CORE_dp3`: CORE with the DP3 policy backbone.
 
-The results are logged by `swanlab or wandb`, so you need to `swanlab login` first to see the results.
+## 🧩 Pipeline
 
-1. Generate demonstrations by `gen_demonstration_adroit.sh` and `gen_demonstration_metaworld.sh`. See the scripts for details. For example:
-    ```bash
-    bash scripts/gen_demonstration_metaworld.sh drawer-close
-    ```
-    This will generate demonstrations for the `drawer-close` task in Meta-World environment. The data will be saved in `MP1/data/` folder automatically.
+Both variants follow the same three-stage CORE pipeline:
 
-2. Train and evaluate a policy with behavior cloning. For example:
-    ```bash
-    bash ./auto_run.bash 0 mp
-    ```
-    This will train a MP/MP1 policy on the `drawer-close` task in Meta-World environment using point cloud modality.
+1. Stage 1 trains a terminal outcome encoder with bidirectional contrastive
+   learning and auxiliary temporal prediction losses.
+2. Stage 2 encodes successful terminal frames and aggregates them into a shared
+   visual goal prototype.
+3. Stage 3 reloads the terminal encoder and shared prototype, then trains the
+   policy with CORE goal conditioning.
 
-3. Run MP1 with the dispersive-loss config on the 7-task Meta-World setup:
-    ```bash
-    bash auto_run.bash 0 mp1_cm_dis metaworld_multitask_7 0
-    ```
-    This command uses GPU `0`, loads `MP1/mp1/config/mp1_cm_dis.yaml`, runs the `metaworld_multitask_7` task setting, and uses random seed `0`. The wrapper calls `scripts/train_policy.sh`, which writes outputs under `MP1/data/outputs/`.
+## ⚙️ Installation
 
-# 🤖 Real-world Deploy
+Follow [install.md](install.md) to set up the Python environment and simulation
+dependencies.
 
-# 🏷️ License
-This repository is released under the MIT license.
+The original development environment used Python 3.8, CUDA 11.8, PyTorch 2.2.1,
+and MuJoCo 2.1.0.
 
-# 🙏 Acknowledgement
+## 📦 Data
 
-Our code is built upon [3D Diffusion Policy](https://github.com/YanjieZe/3D-Diffusion-Policy), [Flow Policy](https://github.com/zql-kk/FlowPolicy), [Mean Flow](https://github.com/haidog-yaqub/MeanFlow), [Mean Flow official](https://github.com/Gsunshine/meanflow), [VRL3](https://github.com/microsoft/VRL3), and [Metaworld](https://github.com/Farama-Foundation/Metaworld). We would like to thank the authors for their excellent works.
+Generate the fixed Meta-World task data:
 
-# 🥰 Contact
-If you have any questions, feel free to contact Juyi Sheng at [logss2024](mailto:logss2024@stu.pku.edu.cn).
+```bash
+bash scripts/gen_demonstration_metaworld.sh box-close
+```
 
+The expected dataset path is:
 
+```text
+CORE/data/metaworld_box-close_expert.zarr
+```
 
+## 🚀 Training
+
+Run CORE with the MP backbone:
+
+```bash
+bash auto_3stage.bash --method CORE_mp --gpu 0
+```
+
+Run CORE with the DP3 backbone:
+
+```bash
+bash auto_3stage.bash --method CORE_dp3 --gpu 0
+```
+
+Run one seed:
+
+```bash
+bash auto_3stage.bash --method CORE_mp --gpu 0 --seeds 0
+```
+
+Dry run:
+
+```bash
+bash auto_3stage.bash --method CORE_mp --gpu 0 --seeds 0 --stages 1 --dry-run
+```
+
+## 🗂️ Main Files
+
+```text
+auto_3stage.bash
+CORE/scripts/train_CORE_mp_stage.sh
+CORE/scripts/train_CORE_dp3_stage.sh
+CORE/scripts/build_CORE_mp_bank.py
+CORE/scripts/build_CORE_dp3_bank.py
+CORE/core/config/CORE_mp.yaml
+CORE/core/config/CORE_dp3.yaml
+CORE/core/policy/core_mp_policy.py
+CORE/core/policy/core_dp3_policy.py
+CORE/core/dataset/core_terminal_dataset.py
+```
+
+## 📁 Outputs
+
+Training outputs:
+
+```text
+CORE/data/outputs/
+```
+
+Goal banks:
+
+```text
+CORE/data/goal_bank_CORE_mp/
+CORE/data/goal_bank_CORE_dp3/
+```
+
+## ✅ Verification
+
+```bash
+python -m py_compile \
+  CORE/scripts/build_CORE_mp_bank.py \
+  CORE/scripts/build_CORE_dp3_bank.py \
+  CORE/core/policy/core_auxiliary.py \
+  CORE/core/policy/core_mp_policy.py \
+  CORE/core/policy/core_dp3_policy.py \
+  CORE/core/dataset/core_terminal_dataset.py
+```
+
+On Linux:
+
+```bash
+bash -n auto_3stage.bash
+bash auto_3stage.bash --method CORE_mp --gpu 0 --seeds 0 --stages 1 --dry-run
+```
+
+## 🕶️ Anonymous Review
+
+This repository is prepared for anonymous review. Author names, affiliations,
+and identifying project paths are intentionally omitted.
